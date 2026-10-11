@@ -164,6 +164,13 @@ code,
   font-size: 0.86em;
 }
 
+/* Headings and <main> receive focus programmatically after navigation (for
+   screen readers); they do not need a visible ring. */
+h1[tabindex="-1"]:focus,
+main:focus {
+  outline: none;
+}
+
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -252,16 +259,17 @@ code,
 .wordmark .bar {
   display: inline-block;
   position: relative;
-  color: transparent;
+  color: var(--ink);
 }
 
+/* a redaction rule under the word keeps it readable */
 .wordmark .bar::after {
   content: "";
   position: absolute;
   left: -2px;
   right: -2px;
-  top: 0.18em;
-  bottom: 0.08em;
+  top: 1.02em;
+  height: 0.2em;
   background: var(--redact);
   border-radius: 2px;
   transform-origin: left center;
@@ -1346,4 +1354,24 @@ td .badge {
 }
 .meter > .fill-100 {
   width: 100%;
+}
+
+/* small screens: wordmark + theme toggle on the first row, full-width
+   scrollable navigation on the second */
+@media (max-width: 859px) {
+  .site-header .nav {
+    order: 3;
+    flex-basis: 100%;
+    margin: 0 calc(-1 * var(--space-2));
+  }
+}
+
+tbody th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-ui);
+  font-size: 0.93rem;
+  font-weight: 650;
+  color: var(--ink);
+  background: none;
 }
