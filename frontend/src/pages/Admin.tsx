@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiError, type User } from "../api";
+import { IconAlert } from "../components/Icons";
 import { Notice } from "../components/Notice";
 import { errorMessage, t } from "../i18n";
 import { formatBytes, formatDateTime } from "../lib/format";
@@ -279,7 +280,12 @@ function UserRow({ u, self, act }: { u: AdminUser; self: boolean; act: (fn: () =
       <td>{u.is_admin ? t("admin.roleAdmin") : t("admin.roleUser")}</td>
       <td>
         {u.is_active ? t("admin.active") : t("admin.disabled")}
-        {u.locked && <span className="badge badge-warn">{t("admin.locked")}</span>}
+        {u.locked && (
+          <span className="badge badge-warn">
+            <IconAlert size={12} />
+            {t("admin.locked")}
+          </span>
+        )}
       </td>
       <td>{u.active_sessions}</td>
       <td>
