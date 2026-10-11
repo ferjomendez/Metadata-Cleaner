@@ -1,0 +1,17 @@
+.git
+.github
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.env
+.env.*
+!.env.example
+data
+work
+*.zip
+*.sqlite3*
+fixtures-out
+docs
+scripts

@@ -1,0 +1,63 @@
+# syntax=docker/dockerfile:1
+# worker image: MAT2, ExifTool, FFmpeg, pikepdf, Pillow from Debian trixie.
+# Runs with no network, read-only root filesystem and no capabilities (see compose.yaml).
+#
+# Tool versions are pinned to the upstream release with a wildcard on the
+# Debian revision, so Debian security updates of the same release still
+# install, but an unexpected upstream upgrade fails the build loudly.
+# libarchive-zip-perl lets ExifTool read OOXML/ODF document properties
+# (without it ExifTool only sees a plain ZIP).
+# bubblewrap is deliberately NOT installed: it cannot create namespaces in an
+# unprivileged container, so MAT2 runs with --no-sandbox and the container
+# itself is the sandbox (docs/SECURITY.md).
+
+ARG DEBIAN_IMAGE=debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+
+FROM ${DEBIAN_IMAGE} AS worker
+ARG MAT2_VERSION=0.13.5-*
+ARG EXIFTOOL_VERSION=13.25+dfsg-*
+ARG FFMPEG_VERSION=7:7.1.*
+ARG PIL_VERSION=11.1.0-*
+ARG PIKEPDF_VERSION=9.5.2+dfsg-*
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3 \
+      "mat2=${MAT2_VERSION}" \
+      "libimage-exiftool-perl=${EXIFTOOL_VERSION}"       libarchive-zip-perl \
+      "ffmpeg=${FFMPEG_VERSION}" \
+      "python3-pil=${PIL_VERSION}" \
+      "python3-pikepdf=${PIKEPDF_VERSION}" \
+ && rm -rf /var/lib/apt/lists/* \
+ && if command -v bwrap; then echo "bubblewrap must not be installed" && exit 1; fi
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOME=/tmp \
+    TMPDIR=/tmp \
+    XDG_CACHE_HOME=/tmp/.cache \
+    MC_DATA_DIR=/data \
+    MC_WORK_DIR=/work
+RUN groupadd -g 10001 app && useradd -u 10001 -g app -M -d /nonexistent -s /usr/sbin/nologin app \
+ && mkdir -p /data /work /app && chown app:app /data /work && chmod 0700 /data /work
+WORKDIR /app
+COPY backend/app /app/app
+RUN python3 -m compileall -q /app/app
+USER 10001:10001
+CMD ["python3", "-m", "app.worker"]
+
+# ---------------------------------------------------------------- worker tests
+# Adds pytest and the libraries used only to generate test fixtures.
+FROM worker AS worker-test
+USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3-pytest python3-openpyxl python3-docx python3-lxml python3-xlsxwriter \
+      python3-typing-extensions python3-pip libheif-examples libheif-plugin-x265 \
+ && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements-worker-test.lock /tmp/requirements-worker-test.lock
+RUN pip3 install --break-system-packages --no-deps --require-hashes -r /tmp/requirements-worker-test.lock \
+ && rm /tmp/requirements-worker-test.lock
+COPY backend/tests /app/tests
+COPY backend/pytest.ini /app/pytest.ini
+USER 10001:10001
+CMD ["python3", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/worker", "tests/common"]
