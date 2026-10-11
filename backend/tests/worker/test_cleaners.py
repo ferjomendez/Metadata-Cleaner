@@ -180,7 +180,7 @@ def test_docx_conservative(settings, fixtures, tmp_path):
     out = Path(r["output"])
     xml = zip_text(out)
     assert fx.AUTHOR.encode() not in xml and fx.SERIAL.encode() not in xml
-    assert b"fer/Documentos" not in xml and b"rsidR" not in xml
+    assert b"usuario.ejemplo/Documentos" not in xml and b"rsidR" not in xml
     assert fx.COMMENT_TEXT.encode() in xml          # comment kept...
     assert b'w:author="Autor 1"' in xml             # ...author pseudonymised
     assert b"texto insertado" in xml                 # tracked change kept
@@ -204,6 +204,11 @@ def test_docx_deep(settings, fixtures, tmp_path):
     xml = zip_text(out)
     assert fx.AUTHOR.encode() not in xml and fx.COMMENT_TEXT.encode() not in xml
     assert b"texto insertado" in xml  # insertion accepted into the text
+    with zipfile.ZipFile(out) as zf:
+        media = [n for n in zf.namelist() if n.startswith("word/media/")]
+        img = tmp_path / "deep-embedded.jpg"
+        img.write_bytes(zf.read(media[0]))
+    assert fx.AUTHOR not in exif_json(img) and "GPS" not in exif_json(img)
     d = docx.Document(str(out))  # MAT2 alone produced a dangling relationship here
     assert any(fx.BODY_TEXT in p.text for p in d.paragraphs)
 
@@ -214,7 +219,7 @@ def test_xlsx_both_modes_keep_formulas(settings, fixtures, tmp_path):
         r = clean(settings, fixtures, "xlsx", mode, tmp_path)
         out = Path(r["output"])
         xml = zip_text(out)
-        assert fx.AUTHOR.encode() not in xml and b"fer\\Documentos" not in xml
+        assert fx.AUTHOR.encode() not in xml and b"usuario.ejemplo\\Documentos" not in xml
         wb = openpyxl.load_workbook(out)
         assert wb["Datos"]["A3"].value == "=A1*A2" and wb["Datos"]["C1"].value == "=SUM(A1:A3)"
         assert wb["Oculta"].sheet_state == "hidden"

@@ -58,6 +58,8 @@ services:
       SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-480}
       SESSION_MAX_HOURS: ${SESSION_MAX_HOURS:-24}
       TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-}
+      # read by uvicorn: proxies allowed to set X-Forwarded-For (only behind HTTPS proxy)
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
     ports:
       - "${BIND_ADDRESS:?BIND_ADDRESS must be set in .env (the server LAN IP)}:${HOST_PORT:-8480}:8000"
     volumes:

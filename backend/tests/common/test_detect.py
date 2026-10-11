@@ -159,7 +159,7 @@ def test_zip_slip_names(tmp_path, name):
 
 @pytest.mark.parametrize("raw,expected", [
     ("../../etc/passwd", "passwd"),
-    ("C:\\Users\\fer\\foto.jpg", "foto.jpg"),
+    ("C:\\Users\\usuario\\foto.jpg", "foto.jpg"),
     ("a\x00b\nc.pdf", "abc.pdf"),
     ("<script>.png", "_script_.png"),
     ("", "archivo"),

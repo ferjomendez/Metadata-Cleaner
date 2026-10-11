@@ -20,7 +20,7 @@ from pathlib import Path
 
 AUTHOR = "Fer Autor"
 SERIAL = "SN-998877"
-PRIVATE_PATH = "C:\\Users\\fer\\Documentos\\secreto"
+PRIVATE_PATH = "C:\\Users\\usuario.ejemplo\\Documentos\\secreto"
 COMMENT_TEXT = "comentario privado"
 BODY_TEXT = "Texto visible del documento"
 

@@ -65,6 +65,6 @@ describe("t()", () => {
 
   it("has no em dashes in user-facing text", () => {
     const text = JSON.stringify(esCL);
-    expect(text.includes("—")).toBe(false);
+    expect(text.includes(String.fromCharCode(0x2014))).toBe(false);
   });
 });
