@@ -423,6 +423,13 @@ main {
   gap: var(--space-4);
 }
 
+/* grid items default to min-width: auto, which lets a wide table push the
+   page sideways instead of scrolling inside .table-wrap */
+.stack > *,
+.grid-2 > * {
+  min-width: 0;
+}
+
 /* ------------------------------------------------------------------ panels */
 .card {
   background: var(--surface);
