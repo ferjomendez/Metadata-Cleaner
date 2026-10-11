@@ -122,6 +122,11 @@ export function App() {
       <header className="site-header">
         <div className="container">
           <a className="wordmark" href="/" onClick={linkHandler("/")} aria-label={t("app.name")}>
+            <span className="logomark" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
             <span className="bar" aria-hidden="true">
               Metadata
             </span>

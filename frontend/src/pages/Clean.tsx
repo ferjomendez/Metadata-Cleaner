@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, uploadFile, type AppConfig, type Job, type Mode } from "../api";
 import { Dropzone } from "../components/Dropzone";
-import { IconX } from "../components/Icons";
+import { IconAlert, IconX } from "../components/Icons";
 import { Notice } from "../components/Notice";
 import { StatusBadge } from "../components/StatusBadge";
 import { errorMessage, t, warningText } from "../i18n";
@@ -183,7 +183,7 @@ export function Clean({ config }: { config: AppConfig }) {
             <fieldset className="modes">
               <legend className="visually-hidden">{t("clean.modeTitle")}</legend>
               {(["conservative", "deep"] as Mode[]).map((m) => (
-                <label key={m} className="mode-option">
+                <label key={m} className={`mode-option mode-${m}`}>
                   <input
                     type="radio"
                     name="mode"
@@ -193,7 +193,10 @@ export function Clean({ config }: { config: AppConfig }) {
                     aria-describedby={`mode-${m}-desc`}
                   />
                   <span className="mode-name">
-                    {t(`clean.modes.${m}.name`)}
+                    <span className="mode-label">
+                      {m === "deep" && <IconAlert size={16} />}
+                      {t(`clean.modes.${m}.name`)}
+                    </span>
                     <span className="mode-check" aria-hidden="true">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <path d="m5 12 5 5 9-10" />
@@ -206,9 +209,12 @@ export function Clean({ config }: { config: AppConfig }) {
             </fieldset>
           </section>
 
-          <section className="card" aria-labelledby="warn-title">
+          <section className={mode === "deep" ? "card card-warn" : "card"} aria-labelledby="warn-title">
             <div className="card-head">
-              <h2 id="warn-title">{t("clean.warningsTitle", { mode: t(`clean.modes.${mode}.name`).toLowerCase() })}</h2>
+              <h2 id="warn-title">
+                {mode === "deep" && <IconAlert size={16} />}
+                {t("clean.warningsTitle", { mode: t(`clean.modes.${mode}.name`).toLowerCase() })}
+              </h2>
             </div>
             {formats.length === 0 ? (
               <p className="muted">{t("clean.warningsEmpty")}</p>
@@ -268,7 +274,7 @@ function FileRow({ item, config, onRemove }: { item: Item; config: AppConfig; on
       <div>
         <div className="file-name">{item.file.name}</div>
         <div className="file-meta">
-          <span>{formatBytes(item.file.size)}</span>
+          <span className="num">{formatBytes(item.file.size)}</span>
           {label && <span className="format-tag">{label}</span>}
           <StatusBadge status={badgeStatus} label={statusLabel} />
         </div>

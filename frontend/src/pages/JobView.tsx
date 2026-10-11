@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type AppConfig, type Job, type JobFile } from "../api";
 import { Countdown } from "../components/Countdown";
-import { IconDownload, IconTrash } from "../components/Icons";
+import { IconAlert, IconDownload, IconTrash } from "../components/Icons";
 import { Notice } from "../components/Notice";
 import { ReportPanel } from "../components/ReportPanel";
 import { StatusBadge } from "../components/StatusBadge";
@@ -156,7 +156,7 @@ function ResultCard({
             {label && <span className="format-tag">{label}</span>}
             <StatusBadge status={file.status} />
             {s && (
-              <span>
+              <span className="num">
                 {t("job.sizeChange", { before: formatBytes(s.size_before), after: formatBytes(s.size_after) })}
               </span>
             )}
@@ -169,7 +169,8 @@ function ResultCard({
               <span className="count-chip">
                 {t("job.retained")} <strong>{s.retained.length}</strong>
               </span>
-              <span className="count-chip">
+              <span className={s.not_verified.length ? "count-chip count-warn" : "count-chip"}>
+                {s.not_verified.length > 0 && <IconAlert size={12} />}
                 {t("job.notVerified")} <strong>{s.not_verified.length}</strong>
               </span>
             </div>

@@ -1,4 +1,5 @@
 import { t } from "../i18n";
+import { IconCheck, IconX } from "./Icons";
 
 const tone: Record<string, string> = {
   done: "ok",
@@ -18,5 +19,11 @@ const tone: Record<string, string> = {
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const kind = tone[status] ?? "";
   const cls = kind === "busy" ? "badge badge-busy" : kind ? `badge badge-${kind}` : "badge";
-  return <span className={cls}>{label ?? t(`job.fileStatus.${status}`)}</span>;
+  return (
+    <span className={cls}>
+      {kind === "ok" && <IconCheck size={12} />}
+      {kind === "error" && <IconX size={12} />}
+      {label ?? t(`job.fileStatus.${status}`)}
+    </span>
+  );
 }
