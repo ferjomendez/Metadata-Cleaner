@@ -11,7 +11,11 @@ WORKDIR /src
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund --ignore-scripts
 COPY frontend/ ./
-RUN npm run build
+# The i18n coverage test reads the backend sources to make sure every code the
+# backend can return has a translation.
+COPY backend/app /backend/app
+ENV BACKEND_APP_DIR=/backend/app
+RUN npm test && npm run build
 
 # ---------------------------------------------------------------- api runtime
 FROM ${PYTHON_IMAGE} AS api

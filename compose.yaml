@@ -1,0 +1,112 @@
+# Metadata Cleaner: two containers, no Redis, no published database port.
+#
+#   api     FastAPI + compiled frontend. The only published port, bound to the
+#           LAN address in .env (BIND_ADDRESS), never 0.0.0.0. Docker bypasses
+#           ufw, so this binding is the access restriction.
+#   worker  Runs MAT2 / ExifTool / FFmpeg. No network at all, read-only root
+#           filesystem, no capabilities, non-root, resource limits.
+#
+# Volumes: mc_data holds the SQLite database (back it up). mc_work holds
+# uploads and results for at most RETENTION_MINUTES (never back it up).
+
+name: metadata-cleaner
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-hardening: &hardening
+  read_only: true
+  user: "10001:10001"
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+  logging: *logging
+
+x-limits-env: &limits_env
+  MAX_FILE_MB: ${MAX_FILE_MB:-500}
+  MAX_FILES_PER_BATCH: ${MAX_FILES_PER_BATCH:-20}
+  MAX_BATCH_MB: ${MAX_BATCH_MB:-2048}
+  WORK_QUOTA_GB: ${WORK_QUOTA_GB:-10}
+  MIN_FREE_DISK_GB: ${MIN_FREE_DISK_GB:-20}
+  MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-1}
+  FILE_TIMEOUT_SECONDS: ${FILE_TIMEOUT_SECONDS:-300}
+  RETENTION_MINUTES: ${RETENTION_MINUTES:-60}
+  HISTORY_RETENTION_DAYS: ${HISTORY_RETENTION_DAYS:-30}
+  MAX_IMAGE_MEGAPIXELS: ${MAX_IMAGE_MEGAPIXELS:-100}
+  MAX_PDF_PAGES: ${MAX_PDF_PAGES:-300}
+  MAX_MEDIA_DURATION_SECONDS: ${MAX_MEDIA_DURATION_SECONDS:-14400}
+  MAX_ARCHIVE_ENTRIES: ${MAX_ARCHIVE_ENTRIES:-10000}
+  MAX_ARCHIVE_UNCOMPRESSED_MB: ${MAX_ARCHIVE_UNCOMPRESSED_MB:-1024}
+  MAX_ARCHIVE_RATIO: ${MAX_ARCHIVE_RATIO:-200}
+
+services:
+  api:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: api
+    image: metadata-cleaner-api:local
+    environment:
+      <<: *limits_env
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env (openssl rand -hex 32)}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-480}
+      SESSION_MAX_HOURS: ${SESSION_MAX_HOURS:-24}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-}
+    ports:
+      - "${BIND_ADDRESS:?BIND_ADDRESS must be set in .env (the server LAN IP)}:${HOST_PORT:-8480}:8000"
+    volumes:
+      - mc_data:/data
+      - mc_work:/work
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.healthcheck", "api"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      worker:
+        condition: service_started
+
+  worker:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.worker
+      target: worker
+    image: metadata-cleaner-worker:local
+    network_mode: none
+    environment:
+      <<: *limits_env
+    volumes:
+      - mc_data:/data
+      - mc_work:/work
+    tmpfs:
+      # HOME, font caches and MAT2/FFmpeg temporary files. Large files are
+      # processed in /work, not here.
+      - /tmp:size=256m,mode=1777
+    pids_limit: 256
+    mem_limit: 1536m
+    memswap_limit: 1536m
+    cpus: 1.5
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD", "python3", "-m", "app.healthcheck", "worker"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  mc_data:
+  mc_work:
