@@ -59,4 +59,4 @@ cd frontend && npm ci && npm test && npm run dev    # proxy de /api a 127.0.0.1:
 
 ## Licencia
 
-Sin licencia por ahora (todos los derechos reservados) hasta que el propietario decida. Ver [docs/LICENSING.md](docs/LICENSING.md).
+MIT License.
